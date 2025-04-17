@@ -1,0 +1,21 @@
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+
+# IDEs
+*.iml
+.idea/
+*.classpath
+*.project
+*.settings/
+
+# VS Code
+.vscode/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Tests temporaires
+*.tmp
