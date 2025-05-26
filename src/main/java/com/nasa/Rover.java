@@ -8,34 +8,21 @@ import java.util.List;
 
 /**
  * Simulates the navigation of robotic rovers on a rectangular plateau.
- * Each rover receives commands to rotate and move on a grid.
  */
 public class Rover {
 
-    /**
-     * Represents the four cardinal directions.
-     */
     enum Direction {
         N, E, S, W;
 
-        /**
-         * Returns the direction resulting from a 90-degree left turn.
-         */
         public Direction turnLeft() {
             return values()[(this.ordinal() + 3) % 4];
         }
 
-        /**
-         * Returns the direction resulting from a 90-degree right turn.
-         */
         public Direction turnRight() {
             return values()[(this.ordinal() + 1) % 4];
         }
     }
 
-    /**
-     * Represents a position on the plateau with coordinates and direction.
-     */
     static class Position {
         int x, y;
         Direction dir;
@@ -46,9 +33,6 @@ public class Rover {
             this.dir = dir;
         }
 
-        /**
-         * Moves the position one step forward in the current direction.
-         */
         void move() {
             switch (dir) {
                 case N -> y++;
@@ -64,75 +48,94 @@ public class Rover {
         }
     }
 
-    /**
-     * Reads rover instructions from a file and executes them.
-     * 
-     * @param args expects a single argument: the input filename.
-     * @throws IOException if file reading fails.
-     */
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args) {
         if (args.length != 1) {
             System.err.println("Usage: java -jar rover.jar input.txt");
             return;
         }
 
-        List<String> outputResults = executeFromFile(args[0]);
-        outputResults.forEach(System.out::println);
+        try {
+            List<String> outputs = executeFromFile(args[0]);
+            outputs.forEach(System.out::println);
+        } catch (Exception e) {
+            System.err.println("Erreur : " + e.getMessage());
+        }
     }
 
-    /**
-     * Parses instructions from an input file and returns the final positions of all rovers.
-     *
-     * @param filename input file containing plateau dimensions and rover commands
-     * @return list of final rover positions
-     * @throws IOException if file reading fails
-     */
     public static List<String> executeFromFile(String filename) throws IOException {
+        List<String> allLines;
+
+        // Lire toutes les lignes et fermer le fichier immédiatement
+        try (BufferedReader reader = new BufferedReader(new FileReader(filename))) {
+            allLines = reader.lines()
+                .map(String::trim)
+                .filter(line -> !line.isEmpty())
+                .toList();
+        }
+
+        if (allLines.isEmpty()) {
+            throw new IllegalArgumentException("Fichier vide ou mal formaté");
+        }
+
+        // Lecture des dimensions du plateau
+        String[] plateauDims = allLines.get(0).split(" ");
+        if (plateauDims.length != 2) {
+            throw new IllegalArgumentException("Dimensions du plateau incorrectes");
+        }
+
+        int maxX = Integer.parseInt(plateauDims[0]);
+        int maxY = Integer.parseInt(plateauDims[1]);
+
+        if (maxX <= 0 || maxY <= 0) {
+            throw new IllegalArgumentException("Les dimensions du plateau doivent être strictement positives");
+        }
+
         List<String> results = new ArrayList<>();
 
-        BufferedReader br = new BufferedReader(new FileReader(filename));
-        String line = br.readLine();
-        String[] plateau = line.split(" ");
-        int maxX = Integer.parseInt(plateau[0]);
-        int maxY = Integer.parseInt(plateau[1]);
-        if (maxX <= 0 || maxY <= 0){
-            throw new IllegalArgumentException("Plateau dimensions must be positive integers");
-        }
+        // Lecture des rovers (position + commandes éventuelles)
+        for (int i = 1; i < allLines.size(); i += 2) {
+            String positionLine = allLines.get(i);
+            String commandsLine = (i + 1 < allLines.size()) ? allLines.get(i + 1) : "";            
 
-        List<String> lines = new ArrayList<>();
-        while (line != null && !line.isEmpty()) {
-            line = br.readLine();
-            lines.add(line);
-        }
-        br.close();
-        
-        lines.forEach(l -> {
-            if (l == null || l.trim().isEmpty()) return; // Skip empty lines
-            String[] parts = l.split(" ");
-
-            int x = Integer.parseInt(parts[0]);
-            int y = Integer.parseInt(parts[1]);
-            Direction dir = Direction.valueOf(parts[2]);
-            Position pos = new Position(x, y, dir);
-
-            l.chars().forEach(c -> {
-                switch (c) {
-                    case 'L' -> pos.dir = pos.dir.turnLeft();
-                    case 'R' -> pos.dir = pos.dir.turnRight();
-                    case 'M' -> {
-                        pos.move();
-                        if (pos.x < 0 || pos.y < 0 || pos.x > maxX || pos.y > maxY) {
-                            throw new IllegalArgumentException("Rover moved out of bounds");
-                        }
-                    }
-                    default -> throw new IllegalArgumentException("Invalid command: " + c);
-                }
-            });
-
+            Position pos = parseInitialPosition(positionLine);
+            validateStartPosition(pos, maxX, maxY);
+            executeCommands(pos, commandsLine, maxX, maxY);
             results.add(pos.toString());
-        });
+        }
 
-        br.close();
         return results;
     }
-} 
+
+    private static Position parseInitialPosition(String line) {
+        String[] parts = line.trim().split(" ");
+        if (parts.length != 3)
+            throw new IllegalArgumentException("Position initiale mal formatée : " + line);
+
+        int x = Integer.parseInt(parts[0]);
+        int y = Integer.parseInt(parts[1]);
+        Direction dir = Direction.valueOf(parts[2]);
+        return new Position(x, y, dir);
+    }
+
+    private static void validateStartPosition(Position pos, int maxX, int maxY) {
+        if (pos.x < 0 || pos.y < 0 || pos.x > maxX || pos.y > maxY) {
+            throw new IllegalArgumentException("Position initiale hors du plateau : " + pos);
+        }
+    }
+
+    private static void executeCommands(Position pos, String commands, int maxX, int maxY) {
+        for (char command : commands.toCharArray()) {
+            switch (command) {
+                case 'L' -> pos.dir = pos.dir.turnLeft();
+                case 'R' -> pos.dir = pos.dir.turnRight();
+                case 'M' -> {
+                    pos.move();
+                    if (pos.x < 0 || pos.y < 0 || pos.x > maxX || pos.y > maxY) {
+                        throw new IllegalArgumentException("Rover sorti du plateau : " + pos);
+                    }
+                }
+                default -> throw new IllegalArgumentException("Invalid command: " + command);
+            }
+        }
+    }
+}
