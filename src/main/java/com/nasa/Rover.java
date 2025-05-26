@@ -95,22 +95,28 @@ public class Rover {
         String[] plateau = line.split(" ");
         int maxX = Integer.parseInt(plateau[0]);
         int maxY = Integer.parseInt(plateau[1]);
-        if (maxX < 0 || maxY < 0){
-            throw new IllegalArgumentException("Plateau dimensions must be non-negative");
+        if (maxX <= 0 || maxY <= 0){
+            throw new IllegalArgumentException("Plateau dimensions must be positive integers");
         }
-        String positionLine;
-        while ((positionLine = br.readLine()) != null) {
-            String instructionLine = br.readLine();
-            if (instructionLine == null) instructionLine = "";
 
-            String[] parts = positionLine.split(" ");
+        List<String> lines = new ArrayList<>();
+        while (line != null && !line.isEmpty()) {
+            line = br.readLine();
+            lines.add(line);
+        }
+        br.close();
+        
+        lines.forEach(l -> {
+            if (l == null || l.trim().isEmpty()) return; // Skip empty lines
+            String[] parts = l.split(" ");
+
             int x = Integer.parseInt(parts[0]);
             int y = Integer.parseInt(parts[1]);
             Direction dir = Direction.valueOf(parts[2]);
             Position pos = new Position(x, y, dir);
 
-            for (char cmd : instructionLine.toCharArray()) {
-                switch (cmd) {
+            l.chars().forEach(c -> {
+                switch (c) {
                     case 'L' -> pos.dir = pos.dir.turnLeft();
                     case 'R' -> pos.dir = pos.dir.turnRight();
                     case 'M' -> {
@@ -119,12 +125,12 @@ public class Rover {
                             throw new IllegalArgumentException("Rover moved out of bounds");
                         }
                     }
-                    default -> throw new IllegalArgumentException("Invalid command: " + cmd);
+                    default -> throw new IllegalArgumentException("Invalid command: " + c);
                 }
-            }
+            });
 
             results.add(pos.toString());
-        }
+        });
 
         br.close();
         return results;

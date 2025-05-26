@@ -46,14 +46,34 @@ public class RoverTest {
         assertEquals(List.of("0 0 N"), output);
     }
 
-    @Test public void testOnlyRotations() throws IOException {
+    @Test public void testOnlyRotationsL() throws IOException {
         String input = """
                 5 5
                 2 2 N
-                LLRRLLRR
+                L
                 """;
         List<String> output = runWithInput(input);
-        assertEquals(List.of("2 2 N"), output);
+        assertEquals(List.of("2 2 W"), output);
+    }
+
+        @Test public void testOnlyRotationsR() throws IOException {
+        String input = """
+                5 5
+                2 2 N
+                R
+                """;
+        List<String> output = runWithInput(input);
+        assertEquals(List.of("2 2 E"), output);
+    }
+
+        @Test public void testOnlyMove() throws IOException {
+        String input = """
+                5 5
+                2 2 N
+                M
+                """;
+        List<String> output = runWithInput(input);
+        assertEquals(List.of("2 3 N"), output);
     }
 
     @Test public void testEdgeMovements() throws IOException {
@@ -135,19 +155,27 @@ public class RoverTest {
         assertThrows(IllegalArgumentException.class, () -> runWithInput(input));
     }
 
-    @Test public void testInvalidPlateauCoordinates() throws IOException {
+    @Test public void testInvalidPlateauCoordinates1() throws IOException {
         String input = """
                 -5 -5
                 0 0 N
                 M
                 """;
         assertThrows(IllegalArgumentException.class, () -> runWithInput(input));
+    }
 
+        @Test public void testInvalidPlateauCoordinates2() throws IOException {
+        String input = """
+                0 0
+                0 0 N
+                M
+                """;
+        assertThrows(IllegalArgumentException.class, () -> runWithInput(input));
     }
 
     @Test public void testMinimalPlateauSize() throws IOException {
         String input = """
-                0 0
+                1 1
                 0 0 N
                 """;
         List<String> output = runWithInput(input);
